@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Battleship — Devin Edition</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Battleship — Devin Edition</h1>
+    <div class="controls">
+      <button id="newGameBtn" aria-label="Start a new game">New Game</button>
+      <button id="reshuffleBtn" aria-label="Reshuffle my fleet" title="Available before your first shot">Reshuffle My Fleet</button>
+      <button id="voiceBtn" aria-pressed="false" aria-label="Toggle voice commands">🎙️ Voice: Off</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="board-section">
+      <h2>Your Fleet</h2>
+      <div id="playerBoard" class="board" role="grid" aria-label="Your board"></div>
+      <p class="hint">Tip: Your ships are lightly outlined. The computer will target here.</p>
+    </section>
+
+    <section class="board-section">
+      <h2>Target Grid</h2>
+      <div id="aiBoard" class="board enemy" role="grid" aria-label="Enemy board"></div>
+      <p class="hint">Click a cell or say: <em>“Fire at B5”</em>.</p>
+    </section>
+
+    <aside class="sidebar">
+      <div class="status" id="status" role="status">Welcome! Click <strong>New Game</strong> to begin.</div>
+      <div class="legend">
+        <h3>Legend</h3>
+        <div><span class="swatch ship"></span> Your ship</div>
+        <div><span class="swatch hit"></span> Hit</div>
+        <div><span class="swatch miss"></span> Miss</div>
+        <div><span class="swatch sunk"></span> Sunk</div>
+      </div>
+      <div class="stats" id="stats">
+        <h3>Performance</h3>
+        <ul>
+          <li>Games played: <span id="sGames">0</span></li>
+          <li>Wins: <span id="sWins">0</span></li>
+          <li>Win rate: <span id="sRate">0%</span></li>
+          <li>Avg turns (you): <span id="sAvgTurns">—</span></li>
+        </ul>
+      </div>
+      <details class="help">
+        <summary>How to play</summary>
+        <ol>
+          <li>Click <strong>New Game</strong>.</li>
+          <li>Optionally <strong>Reshuffle</strong> your fleet before your first shot.</li>
+          <li>Fire by clicking the enemy grid or with voice commands.</li>
+          <li>First to sink all ships wins.</li>
+        </ol>
+      </details>
+    </aside>
+  </main>
+
+  <footer class="footer">
+    <small>Built to demonstrate directing AI (Devin) to deliver a polished, playable result. No external libraries.</small>
+  </footer>
+
+  <noscript>Please enable JavaScript to play.</noscript>
+  <script src="app.js" defer></script>
+</body>
+</html>
