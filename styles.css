@@ -171,6 +171,144 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
 @media (prefers-reduced-motion: reduce){
   .cell.ship-sunk{animation:none}
 }
+
+/* Hit Explosion Animation */
+.cell.explosion{
+  position:relative;
+}
+.cell.explosion::before{
+  content:'';
+  position:absolute;
+  top:50%;left:50%;
+  width:40px;height:40px;
+  background:radial-gradient(circle, #ff6b35 0%, #f7931e 30%, #ffcc02 60%, transparent 100%);
+  border-radius:50%;
+  transform:translate(-50%,-50%) scale(0);
+  animation:explosion-burst 0.8s ease-out forwards;
+  pointer-events:none;
+  z-index:10;
+}
+.cell.explosion::after{
+  content:'';
+  position:absolute;
+  top:50%;left:50%;
+  width:20px;height:20px;
+  background:radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,107,53,0.6) 50%, transparent 100%);
+  border-radius:50%;
+  transform:translate(-50%,-50%) scale(0);
+  animation:explosion-flash 0.4s ease-out 0.1s forwards;
+  pointer-events:none;
+  z-index:11;
+}
+
+@keyframes explosion-burst{
+  0%{transform:translate(-50%,-50%) scale(0);opacity:1}
+  50%{transform:translate(-50%,-50%) scale(1.2);opacity:0.8}
+  100%{transform:translate(-50%,-50%) scale(2);opacity:0}
+}
+
+@keyframes explosion-flash{
+  0%{transform:translate(-50%,-50%) scale(0);opacity:1}
+  100%{transform:translate(-50%,-50%) scale(1.5);opacity:0}
+}
+
+/* Miss Splash Animation */
+.cell.splash{
+  position:relative;
+}
+.cell.splash::before{
+  content:'';
+  position:absolute;
+  top:50%;left:50%;
+  width:50px;height:50px;
+  border:2px solid rgba(91,192,190,0.6);
+  border-radius:50%;
+  transform:translate(-50%,-50%) scale(0);
+  animation:splash-ripple 0.6s ease-out forwards;
+  pointer-events:none;
+  z-index:10;
+}
+.cell.splash::after{
+  content:'';
+  position:absolute;
+  top:50%;left:50%;
+  width:30px;height:30px;
+  background:radial-gradient(circle, rgba(111,255,233,0.4) 0%, rgba(91,192,190,0.2) 70%, transparent 100%);
+  border-radius:50%;
+  transform:translate(-50%,-50%) scale(0);
+  animation:splash-center 0.4s ease-out forwards;
+  pointer-events:none;
+  z-index:9;
+}
+
+@keyframes splash-ripple{
+  0%{transform:translate(-50%,-50%) scale(0);opacity:1}
+  100%{transform:translate(-50%,-50%) scale(2);opacity:0}
+}
+
+@keyframes splash-center{
+  0%{transform:translate(-50%,-50%) scale(0);opacity:1}
+  50%{transform:translate(-50%,-50%) scale(1);opacity:0.6}
+  100%{transform:translate(-50%,-50%) scale(1.5);opacity:0}
+}
+
+/* Ship Sinking Animation */
+.cell.ship-sinking{
+  animation:ship-sink-down 1s ease-in forwards;
+  position:relative;
+}
+.cell.ship-sinking::before{
+  content:'';
+  position:absolute;
+  top:50%;left:50%;
+  width:60px;height:60px;
+  border:1px solid rgba(91,192,190,0.3);
+  border-radius:50%;
+  transform:translate(-50%,-50%) scale(0);
+  animation:sink-ripple 1s ease-out forwards;
+  pointer-events:none;
+  z-index:5;
+}
+
+@keyframes ship-sink-down{
+  0%{transform:translateY(0) scale(1);opacity:1}
+  70%{transform:translateY(10px) scale(0.9);opacity:0.7}
+  100%{transform:translateY(20px) scale(0.8);opacity:0.3}
+}
+
+@keyframes sink-ripple{
+  0%{transform:translate(-50%,-50%) scale(0);opacity:0.6}
+  100%{transform:translate(-50%,-50%) scale(2);opacity:0}
+}
+
+/* Storm Overlay for Defeat */
+.storm-overlay{
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(0,0,0,0.8) 0%, transparent 50%),
+    radial-gradient(circle at 70% 80%, rgba(0,0,0,0.6) 0%, transparent 50%),
+    linear-gradient(45deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.7) 100%);
+  pointer-events:none;
+  z-index:998;
+  opacity:0;
+  animation:storm-build 0.8s ease-in forwards;
+}
+
+@keyframes storm-build{
+  0%{opacity:0}
+  100%{opacity:1}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .cell.explosion::before, .cell.explosion::after,
+  .cell.splash::before, .cell.splash::after,
+  .cell.ship-sinking, .cell.ship-sinking::before,
+  .storm-overlay{
+    animation:none !important;
+    display:none;
+  }
+}
 .sidebar{
   background:var(--panel);
   padding:12px;
@@ -270,6 +408,24 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
   box-shadow:0 4px 8px rgba(0,0,0,0.2);
 }
 
+/* Game Stats in Modal */
+.game-stats{
+  background:var(--bg-tertiary);
+  border-radius:8px;
+  padding:16px;
+  margin:16px 0;
+  text-align:left;
+}
+.game-stats div{
+  display:flex;
+  justify-content:space-between;
+  padding:4px 0;
+  border-bottom:1px solid var(--bg-secondary);
+}
+.game-stats div:last-child{
+  border-bottom:none;
+}
+
 /* Confetti Animation */
 .confetti-container{
   position:fixed;
@@ -299,8 +455,269 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
   }
 }
 
+/* Explosion Animation */
+.explosion {
+  position: relative;
+  animation: explosion-pulse 0.8s ease-out;
+}
+
+.explosion::before,
+.explosion::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.explosion::before {
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle, #ff6b35 0%, #f7931e 50%, transparent 70%);
+  animation: explosion-burst 0.8s ease-out;
+}
+
+.explosion::after {
+  width: 30px;
+  height: 30px;
+  background: radial-gradient(circle, rgba(255, 107, 53, 0.6) 0%, rgba(247, 147, 30, 0.4) 40%, transparent 70%);
+  animation: explosion-shockwave 0.8s ease-out;
+}
+
+@keyframes explosion-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes explosion-burst {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes explosion-shockwave {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}
+
+/* Splash Animation */
+.splash {
+  position: relative;
+  animation: splash-ripple 0.6s ease-out;
+}
+
+.splash::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--color-accent);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: splash-expand 0.6s ease-out;
+}
+
+@keyframes splash-ripple {
+  0% { transform: scale(1); }
+  30% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+@keyframes splash-expand {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+    border-width: 3px;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(3);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+/* Metallic Button Styles */
+.metallic-btn {
+  background: linear-gradient(145deg, #c0c0c0, #a0a0a0);
+  border: 2px solid #888;
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: #333;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    inset 2px 2px 4px rgba(255, 255, 255, 0.7),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.3),
+    2px 2px 8px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.metallic-btn:hover:not(:disabled) {
+  background: linear-gradient(145deg, #d0d0d0, #b0b0b0);
+  transform: translateY(-1px);
+  box-shadow: 
+    inset 2px 2px 4px rgba(255, 255, 255, 0.8),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.2),
+    2px 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.metallic-btn:hover:not(:disabled)::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: glint 0.6s ease-out;
+}
+
+@keyframes glint {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+.metallic-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: linear-gradient(145deg, #999, #777);
+}
+
+/* Compass Turn Indicator */
+.turn-compass {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.compass-icon {
+  font-size: 20px;
+  animation: compass-glow 2s ease-in-out infinite alternate;
+  transition: transform 0.5s ease;
+}
+
+.compass-icon.player-turn {
+  transform: rotate(0deg);
+  filter: hue-rotate(120deg);
+}
+
+.compass-icon.ai-turn {
+  transform: rotate(180deg);
+  filter: hue-rotate(0deg);
+}
+
+@keyframes compass-glow {
+  0% { 
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+    transform: scale(1);
+  }
+  100% { 
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.8), 0 0 25px rgba(255, 215, 0, 0.4);
+    transform: scale(1.1);
+  }
+}
+
+/* Sonar Pulse Animation */
+.sonar-pulse {
+  position: relative;
+  background: rgba(0, 150, 255, 0.3) !important;
+  animation: sonar-ping 2s ease-out;
+}
+
+.sonar-pulse::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border: 2px solid rgba(0, 150, 255, 0.8);
+  border-radius: 50%;
+  animation: sonar-ripple 2s ease-out;
+  transform: translate(-50%, -50%);
+}
+
+@keyframes sonar-ping {
+  0% { background: rgba(0, 150, 255, 0.6); }
+  100% { background: rgba(0, 150, 255, 0.1); }
+}
+
+@keyframes sonar-ripple {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+  100% {
+    width: 60px;
+    height: 60px;
+    opacity: 0;
+  }
+}
+
+/* Ship Placement Animation */
+.ship-placing {
+  animation: ship-slide-in 0.5s ease-out;
+}
+
+@keyframes ship-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.8);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateY(-5px) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce){
   .confetti{display:none}
+  .explosion, .explosion::before, .explosion::after,
+  .splash, .splash::before,
+  .sonar-pulse, .sonar-pulse::before,
+  .ship-placing,
+  .compass-icon,
+  .metallic-btn {
+    animation: none !important;
+  }
+  
+  .compass-icon {
+    transform: none !important;
+  }
+  
+  .metallic-btn:hover::before {
+    display: none !important;
+  }
 }
 
 @media (max-width:1000px){
