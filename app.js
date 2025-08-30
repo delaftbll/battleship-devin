@@ -15,6 +15,7 @@
   const newGameBtn = el('#newGameBtn');
   const reshuffleBtn = el('#reshuffleBtn');
   const voiceBtn = el('#voiceBtn');
+  const themeToggle = el('#themeToggle');
 
   const statsEls = {
     games: el('#sGames'),
@@ -28,13 +29,16 @@
   let game = null;
 
   function init() {
+    initTheme();
     wireUI();
     loadStats();
     renderEmptyBoards();
     status('Welcome! Click New Game to begin.');
+    createGameEndModal();
   }
 
   function wireUI() {
+    themeToggle.addEventListener('click', toggleTheme);
     newGameBtn.addEventListener('click', startGame);
     reshuffleBtn.addEventListener('click', () => {
       if (!game || game.started) return;
@@ -137,7 +141,31 @@
   function renderBoard(container, grid, hideShips) {
     container.innerHTML = '';
     container.style.setProperty('--size', GRID);
-    // Add coordinate headers visually via aria-labels; use title on cells
+    
+    const emptyCorner = document.createElement('div');
+    emptyCorner.className = 'grid-header';
+    emptyCorner.style.gridRow = '1';
+    emptyCorner.style.gridColumn = '1';
+    container.appendChild(emptyCorner);
+    
+    for (let c = 0; c < GRID; c++) {
+      const colHeader = document.createElement('div');
+      colHeader.className = 'grid-header col';
+      colHeader.textContent = String.fromCharCode(65 + c);
+      colHeader.style.gridRow = '1';
+      colHeader.style.gridColumn = `${c + 2}`;
+      container.appendChild(colHeader);
+    }
+    
+    for (let r = 0; r < GRID; r++) {
+      const rowHeader = document.createElement('div');
+      rowHeader.className = 'grid-header row';
+      rowHeader.textContent = `${r + 1}`;
+      rowHeader.style.gridRow = `${r + 2}`;
+      rowHeader.style.gridColumn = '1';
+      container.appendChild(rowHeader);
+    }
+    
     for (let r=0;r<GRID;r++) {
       for (let c=0;c<GRID;c++) {
         const d = grid[r][c];
@@ -146,6 +174,8 @@
         cell.dataset.r = r;
         cell.dataset.c = c;
         cell.tabIndex = 0;
+        cell.style.gridRow = `${r + 2}`;
+        cell.style.gridColumn = `${c + 2}`;
         const label = coordLabel(r,c);
         cell.title = label;
         if (d.ship !== null && !hideShips) cell.classList.add('ship');
@@ -207,6 +237,7 @@
         ship.sunk = true;
         side.fleetSunk++;
         status(`<strong>${ship.name}</strong> sunk!`);
+        setTimeout(() => animateShipSunk(ship, side), 100);
       }
       return true;
     } else {
@@ -220,12 +251,14 @@
       game.over = true;
       status('💥 Your fleet is destroyed. You lose.');
       finalizeStats(false);
+      setTimeout(() => showGameEndModal(false), 500);
       return true;
     }
     if (game.ai.fleetSunk === SHIPS.length) {
       game.over = true;
       status('🏆 You sank all enemy ships. You win!');
       finalizeStats(true);
+      setTimeout(() => showGameEndModal(true), 500);
       return true;
     }
     return false;
@@ -348,6 +381,166 @@
       voiceBtn.textContent = listening? '🎙️ Voice: On' : '🎙️ Voice: Off';
       if (listening) recognition.start(); else recognition.stop();
     });
+  }
+
+  function initTheme() {
+    const saved = localStorage.getItem('battleship_theme');
+    const theme = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    applyTheme(theme);
+  }
+  
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const icon = themeToggle.querySelector('.theme-icon');
+    if (icon) {
+      icon.textContent = theme === 'light' ? '🌙' : '☀️';
+    }
+  }
+  
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'light' ? 'dark' : 'light';
+    applyTheme(next);
+    localStorage.setItem('battleship_theme', next);
+  }
+
+  function animateShipSunk(ship, side) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    
+    const boardEl = (side === game.player) ? playerBoardEl : aiBoardEl;
+    ship.cells.forEach(([r, c]) => {
+      const cell = boardEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+      if (cell) {
+        cell.classList.add('ship-sunk');
+        setTimeout(() => cell.classList.remove('ship-sunk'), 600);
+      }
+    });
+  }
+
+  let gameEndModal = null;
+  
+  function createGameEndModal() {
+    const modalHTML = `
+      <div id="game-end-modal" class="modal-overlay" role="dialog" aria-labelledby="modal-title" aria-modal="true">
+        <div class="modal">
+          <h2 id="modal-title"></h2>
+          <p id="modal-content"></p>
+          <div class="buttons">
+            <button id="play-again-btn" class="primary">Play Again</button>
+            <button id="share-btn" class="secondary">Share</button>
+          </div>
+        </div>
+        <div class="confetti-container" id="confetti-container"></div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    gameEndModal = el('#game-end-modal');
+    
+    el('#play-again-btn').addEventListener('click', () => {
+      hideGameEndModal();
+      startGame();
+    });
+    
+    el('#share-btn').addEventListener('click', () => {
+      const url = window.location.href;
+      const text = `I just played Battleship! Check it out: ${url}`;
+      
+      if (navigator.share) {
+        navigator.share({ title: 'Battleship Game', text, url });
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+        status('Game link copied to clipboard!');
+      } else {
+        prompt('Copy this link:', url);
+      }
+    });
+    
+    gameEndModal.addEventListener('click', (e) => {
+      if (e.target === gameEndModal) hideGameEndModal();
+    });
+    
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && gameEndModal.classList.contains('show')) {
+        hideGameEndModal();
+      }
+    });
+  }
+  
+  function showGameEndModal(won) {
+    const title = el('#modal-title');
+    const content = el('#modal-content');
+    
+    if (won) {
+      title.textContent = '🎉 Victory!';
+      content.textContent = `You won in ${game.playerTurns} turns!`;
+      showConfetti();
+    } else {
+      title.textContent = '💥 Defeat';
+      content.textContent = `The AI won. Better luck next time!`;
+    }
+    
+    gameEndModal.classList.add('show');
+    trapFocus();
+  }
+  
+  function hideGameEndModal() {
+    gameEndModal.classList.remove('show');
+    clearConfetti();
+  }
+  
+  function showConfetti() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    
+    const container = el('#confetti-container');
+    for (let i = 0; i < 50; i++) {
+      setTimeout(() => {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.animationDelay = Math.random() * 3 + 's';
+        container.appendChild(confetti);
+        
+        setTimeout(() => {
+          if (confetti.parentNode) {
+            confetti.parentNode.removeChild(confetti);
+          }
+        }, 3000);
+      }, i * 50);
+    }
+  }
+  
+  function clearConfetti() {
+    const container = el('#confetti-container');
+    if (container) container.innerHTML = '';
+  }
+  
+  function trapFocus() {
+    const focusableElements = gameEndModal.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    firstElement.focus();
+
+    const handleTabKey = (e) => {
+      if (e.key === 'Tab') {
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    };
+
+    gameEndModal.addEventListener('keydown', handleTabKey);
   }
 
   // start

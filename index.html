@@ -10,6 +10,9 @@
   <header class="topbar">
     <h1>Battleship — Devin Edition</h1>
     <div class="controls">
+      <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
+        <span class="theme-icon">🌙</span>
+      </button>
       <button id="newGameBtn" aria-label="Start a new game">New Game</button>
       <button id="reshuffleBtn" aria-label="Reshuffle my fleet" title="Available before your first shot">Reshuffle My Fleet</button>
       <button id="voiceBtn" aria-pressed="false" aria-label="Toggle voice commands">🎙️ Voice: Off</button>
@@ -19,14 +22,18 @@
   <main class="layout">
     <section class="board-section">
       <h2>Your Fleet</h2>
-      <div id="playerBoard" class="board" role="grid" aria-label="Your board"></div>
+      <div class="board-container">
+        <div id="playerBoard" class="board" role="grid" aria-label="Your board"></div>
+      </div>
       <p class="hint">Tip: Your ships are lightly outlined. The computer will target here.</p>
     </section>
 
     <section class="board-section">
       <h2>Target Grid</h2>
-      <div id="aiBoard" class="board enemy" role="grid" aria-label="Enemy board"></div>
-      <p class="hint">Click a cell or say: <em>“Fire at B5”</em>.</p>
+      <div class="board-container">
+        <div id="aiBoard" class="board enemy" role="grid" aria-label="Enemy board"></div>
+      </div>
+      <p class="hint">Click a cell or say: <em>"Fire at B5"</em>.</p>
     </section>
 
     <aside class="sidebar">
