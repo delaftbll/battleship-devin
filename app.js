@@ -61,9 +61,39 @@
       }
     });
     setupVoice();
+    
+    const sonarBtn = document.createElement('button');
+    sonarBtn.id = 'sonar-btn';
+    sonarBtn.textContent = '📡 Sonar Scan';
+    sonarBtn.className = 'metallic-btn';
+    sonarBtn.disabled = false;
+    sonarBtn.addEventListener('click', activateSonarScan);
+    
+    const radioBtn = document.createElement('button');
+    radioBtn.id = 'radio-btn';
+    radioBtn.textContent = '📻 Radio: Off';
+    radioBtn.className = 'metallic-btn';
+    radioBtn.addEventListener('click', toggleRadioChatter);
+    
+    const controls = document.querySelector('.controls');
+    controls.insertBefore(sonarBtn, controls.firstChild);
+    controls.insertBefore(radioBtn, controls.firstChild);
   }
 
-  function status(msg) { statusEl.innerHTML = msg; }
+  function status(msg) { 
+    const statusText = el('#status-text');
+    const compassIcon = el('#compass-icon');
+    
+    if (statusText) {
+      statusText.innerHTML = msg;
+    } else {
+      statusEl.innerHTML = msg;
+    }
+    
+    if (compassIcon && game) {
+      compassIcon.className = `compass-icon ${game.turn === 'player' ? 'player-turn' : 'ai-turn'}`;
+    }
+  }
 
   function renderEmptyBoards() {
     renderBoard(playerBoardEl, emptyMatrix(), false);
@@ -87,6 +117,10 @@
       aiTargets: [], // queue of target cells
       aiTried: new Set(), // "r,c" strings
       aiLastHit: null,
+      startTime: Date.now(),
+      endTime: null,
+      sonarUsed: false,
+      radioChatterEnabled: false
     };
     // place ships for both
     placeAllShips(game.player);
@@ -208,7 +242,11 @@
 
   function playerFire(r,c) {
     if (!game || game.over) return;
-    if (!game.started) { game.started = true; reshuffleBtn.disabled = true; }
+    if (!game.started) { 
+      game.started = true; 
+      reshuffleBtn.disabled = true;
+      setTimeout(animateShipPlacement, 100);
+    }
     if (game.turn !== 'player') return;
     const cell = game.ai.grid[r][c];
     if (cell.hit || cell.miss) { status('You already tried ' + coordLabel(r,c) + '.'); return; }
@@ -217,11 +255,13 @@
     drawBoards();
     if (checkGameOver()) return;
     if (hit) {
-      status(`🎯 Hit at <strong>${coordLabel(r,c)}</strong> — take another shot!`);
+      status(`💥 Hit at <strong>${coordLabel(r,c)}</strong> — take another shot!`);
+      playRadioChatter('hit');
       // Allow extra shot on hit (house rule for fun)
       return;
     } else {
-      status(`Splash at ${coordLabel(r,c)}. Enemy's turn…`);
+      status(`💧 Splash at ${coordLabel(r,c)}. Enemy's turn…`);
+      playRadioChatter('miss');
       game.turn = 'ai';
       setTimeout(aiTurn, 500);
     }
@@ -231,17 +271,36 @@
     const cell = side.grid[r][c];
     if (cell.ship !== null) {
       cell.hit = true;
+      
+      const boardEl = (side === game.player) ? playerBoardEl : aiBoardEl;
+      const cellEl = boardEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+      if (cellEl) {
+        cellEl.classList.add('explosion');
+        setTimeout(() => cellEl.classList.remove('explosion'), 800);
+      }
+      
       const ship = side.ships[cell.ship];
       ship.hits++;
       if (ship.hits === ship.size) {
         ship.sunk = true;
         side.fleetSunk++;
-        status(`<strong>${ship.name}</strong> sunk!`);
+        const sideLabel = side === game.ai ? 'Enemy' : 'Your';
+        status(`🚢 <strong>${sideLabel} ${ship.name}</strong> sunk!`);
+        playRadioChatter('sunk');
         setTimeout(() => animateShipSunk(ship, side), 100);
+        setTimeout(() => animateShipSinking(ship, side), 200);
       }
       return true;
     } else {
       cell.miss = true;
+      
+      const boardEl = (side === game.player) ? playerBoardEl : aiBoardEl;
+      const cellEl = boardEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+      if (cellEl) {
+        cellEl.classList.add('splash');
+        setTimeout(() => cellEl.classList.remove('splash'), 600);
+      }
+      
       return false;
     }
   }
@@ -249,14 +308,18 @@
   function checkGameOver() {
     if (game.player.fleetSunk === SHIPS.length) {
       game.over = true;
+      game.endTime = Date.now();
       status('💥 Your fleet is destroyed. You lose.');
+      playRadioChatter('defeat');
       finalizeStats(false);
       setTimeout(() => showGameEndModal(false), 500);
       return true;
     }
     if (game.ai.fleetSunk === SHIPS.length) {
       game.over = true;
+      game.endTime = Date.now();
       status('🏆 You sank all enemy ships. You win!');
+      playRadioChatter('victory');
       finalizeStats(true);
       setTimeout(() => showGameEndModal(true), 500);
       return true;
@@ -417,6 +480,21 @@
     });
   }
 
+  function animateShipSinking(ship, side) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    
+    const boardEl = (side === game.player) ? playerBoardEl : aiBoardEl;
+    ship.cells.forEach(([r, c], index) => {
+      const cell = boardEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+      if (cell) {
+        setTimeout(() => {
+          cell.classList.add('ship-sinking');
+          setTimeout(() => cell.classList.remove('ship-sinking'), 1000);
+        }, index * 100);
+      }
+    });
+  }
+
   let gameEndModal = null;
   
   function createGameEndModal() {
@@ -471,13 +549,32 @@
     const title = el('#modal-title');
     const content = el('#modal-content');
     
+    const totalShots = game.player.hits.length + game.player.misses.length;
+    const accuracy = totalShots > 0 ? Math.round((game.player.hits.length / totalShots) * 100) : 0;
+    const gameTime = game.endTime ? Math.round((game.endTime - game.startTime) / 1000) : 0;
+    
     if (won) {
       title.textContent = '🎉 Victory!';
-      content.textContent = `You won in ${game.playerTurns} turns!`;
+      content.innerHTML = `
+        <p>Congratulations! You sank all enemy ships!</p>
+        <div class="game-stats">
+          <div>Turns taken: <strong>${game.playerTurns}</strong></div>
+          <div>Accuracy: <strong>${accuracy}%</strong></div>
+          <div>Time elapsed: <strong>${gameTime}s</strong></div>
+        </div>
+      `;
       showConfetti();
     } else {
       title.textContent = '💥 Defeat';
-      content.textContent = `The AI won. Better luck next time!`;
+      content.innerHTML = `
+        <p>The enemy fleet has destroyed your ships!</p>
+        <div class="game-stats">
+          <div>Turns survived: <strong>${game.playerTurns}</strong></div>
+          <div>Accuracy: <strong>${accuracy}%</strong></div>
+          <div>Time elapsed: <strong>${gameTime}s</strong></div>
+        </div>
+      `;
+      showStormOverlay();
     }
     
     gameEndModal.classList.add('show');
@@ -487,6 +584,7 @@
   function hideGameEndModal() {
     gameEndModal.classList.remove('show');
     clearConfetti();
+    clearStormOverlay();
   }
   
   function showConfetti() {
@@ -513,6 +611,23 @@
   function clearConfetti() {
     const container = el('#confetti-container');
     if (container) container.innerHTML = '';
+  }
+
+  function showStormOverlay() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    
+    const stormOverlay = document.createElement('div');
+    stormOverlay.className = 'storm-overlay';
+    stormOverlay.id = 'storm-overlay';
+    document.body.appendChild(stormOverlay);
+    
+  }
+
+  function clearStormOverlay() {
+    const stormOverlay = el('#storm-overlay');
+    if (stormOverlay) {
+      stormOverlay.remove();
+    }
   }
   
   function trapFocus() {
@@ -541,6 +656,143 @@
     };
 
     gameEndModal.addEventListener('keydown', handleTabKey);
+  }
+
+  function activateSonarScan() {
+    if (!game || game.over || game.sonarUsed) return;
+    
+    const sonarBtn = el('#sonar-btn');
+    sonarBtn.disabled = true;
+    sonarBtn.textContent = '📡 Sonar Used';
+    game.sonarUsed = true;
+    
+    const centerR = Math.floor(GRID / 2);
+    const centerC = Math.floor(GRID / 2);
+    
+    let shipsDetected = false;
+    const scanCells = [];
+    
+    for (let r = centerR - 1; r <= centerR + 1; r++) {
+      for (let c = centerC - 1; c <= centerC + 1; c++) {
+        if (r >= 0 && r < GRID && c >= 0 && c < GRID) {
+          scanCells.push([r, c]);
+          if (game.ai.grid[r][c].ship !== null) {
+            shipsDetected = true;
+          }
+        }
+      }
+    }
+    
+    scanCells.forEach(([r, c]) => {
+      const cell = aiBoardEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+      if (cell) {
+        cell.classList.add('sonar-pulse');
+        setTimeout(() => cell.classList.remove('sonar-pulse'), 2000);
+      }
+    });
+    
+    playSound('radar-ping');
+    setTimeout(() => {
+      const result = shipsDetected ? 'Ships detected in scan area!' : 'No ships detected in scan area.';
+      status(`📡 Sonar: ${result}`);
+      playRadioChatter('sonar', shipsDetected);
+    }, 1000);
+  }
+
+  function toggleRadioChatter() {
+    if (!game) return;
+    
+    game.radioChatterEnabled = !game.radioChatterEnabled;
+    const radioBtn = el('#radio-btn');
+    radioBtn.textContent = `📻 Radio: ${game.radioChatterEnabled ? 'On' : 'Off'}`;
+    
+    if (game.radioChatterEnabled) {
+      playRadioChatter('enabled');
+    }
+  }
+
+  function playRadioChatter(event, data = null) {
+    if (!game || !game.radioChatterEnabled) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    
+    const chatter = {
+      hit: ['Direct hit, sir!', 'Target destroyed!', 'Bull\'s eye!'],
+      miss: ['They missed us!', 'Splash, no damage!', 'Close one!'],
+      sunk: ['Enemy ship down!', 'Target eliminated!', 'Ship destroyed!'],
+      victory: ['Mission accomplished!', 'All targets destroyed!', 'Victory is ours!'],
+      defeat: ['We\'re taking heavy damage!', 'Mayday! Mayday!', 'All hands abandon ship!'],
+      sonar: data ? ['Contact confirmed!', 'Enemy ships spotted!'] : ['All clear, sir!', 'No contacts detected!'],
+      enabled: ['Radio online, sir!', 'Communications established!']
+    };
+    
+    const messages = chatter[event];
+    if (!messages) return;
+    
+    const message = messages[Math.floor(Math.random() * messages.length)];
+    
+    setTimeout(() => {
+      status(`📻 ${message}`);
+    }, 200);
+    
+    playSound('radio-static');
+  }
+
+  function playSound(soundType) {
+    const voiceBtn = el('#voiceBtn');
+    if (voiceBtn && voiceBtn.textContent.includes('Off')) return;
+    
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      if (soundType === 'radar-ping') {
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.3);
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.3);
+      } else if (soundType === 'radio-static') {
+        const bufferSize = audioContext.sampleRate * 0.1;
+        const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(gainNode);
+        gainNode.gain.setValueAtTime(0.02, audioContext.currentTime);
+        source.start();
+        source.stop(audioContext.currentTime + 0.1);
+      }
+    } catch (e) {
+      console.log('Sound not supported:', e);
+    }
+  }
+
+  function animateShipPlacement() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    
+    const playerCells = playerBoardEl.querySelectorAll('.cell.ship');
+    playerCells.forEach((cell, index) => {
+      cell.style.opacity = '0';
+      cell.style.transform = 'translateY(-20px)';
+      
+      setTimeout(() => {
+        cell.classList.add('ship-placing');
+        cell.style.opacity = '1';
+        cell.style.transform = 'translateY(0)';
+        
+        setTimeout(() => {
+          cell.classList.remove('ship-placing');
+        }, 500);
+      }, index * 50);
+    });
   }
 
   // start
