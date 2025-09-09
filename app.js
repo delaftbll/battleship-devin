@@ -738,8 +738,6 @@
   }
 
   function playSound(soundType) {
-    const voiceBtn = el('#voiceBtn');
-    if (voiceBtn && voiceBtn.textContent.includes('Off')) return;
     
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
