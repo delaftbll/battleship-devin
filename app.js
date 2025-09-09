@@ -821,36 +821,59 @@ let game = null;
     playSound('radio-static');
   }
 
+  let audioContext = null;
+  
+  function initAudioContext() {
+    if (!audioContext) {
+      try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        if (audioContext.state === 'suspended') {
+          audioContext.resume().then(() => {
+            console.log('AudioContext resumed after user gesture');
+          }).catch(e => {
+            console.error('Failed to resume AudioContext:', e);
+          });
+        }
+      } catch (e) {
+        console.error('AudioContext creation failed:', e);
+        return null;
+      }
+    }
+    return audioContext;
+  }
+
   function playSound(soundType) {
+    const context = initAudioContext();
+    if (!context) return;
     
     try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
+      const oscillator = context.createOscillator();
+      const gainNode = context.createGain();
       
       oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+      gainNode.connect(context.destination);
       
       if (soundType === 'radar-ping') {
-        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.3);
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+        oscillator.frequency.setValueAtTime(800, context.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(400, context.currentTime + 0.3);
+        gainNode.gain.setValueAtTime(0.1, context.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.3);
         oscillator.start();
-        oscillator.stop(audioContext.currentTime + 0.3);
+        oscillator.stop(context.currentTime + 0.3);
       } else if (soundType === 'radio-static') {
-        const bufferSize = audioContext.sampleRate * 0.1;
-        const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+        const bufferSize = context.sampleRate * 0.1;
+        const buffer = context.createBuffer(1, bufferSize, context.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
           data[i] = Math.random() * 2 - 1;
         }
-        const source = audioContext.createBufferSource();
+        const source = context.createBufferSource();
         source.buffer = buffer;
         source.connect(gainNode);
-        gainNode.gain.setValueAtTime(0.02, audioContext.currentTime);
+        gainNode.gain.setValueAtTime(0.02, context.currentTime);
         source.start();
-        source.stop(audioContext.currentTime + 0.1);
+        source.stop(context.currentTime + 0.1);
       }
     } catch (e) {
       console.log('Sound not supported:', e);
