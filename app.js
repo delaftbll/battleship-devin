@@ -1,32 +1,31 @@
-(() => {
-  const GRID = 10;
-  const SHIPS = [
-    { name: "Devin", size: 5 },
-    { name: "Cognition", size: 4 },
-    { name: "AI Engineer", size: 3 },
-    { name: "Automation", size: 3 },
-    { name: "GTM Team", size: 2 },
-  ];
+const GRID = 10;
+const SHIPS = [
+  { name: "Devin", size: 5 },
+  { name: "Cognition", size: 4 },
+  { name: "AI Engineer", size: 3 },
+  { name: "Automation", size: 3 },
+  { name: "GTM Team", size: 2 },
+];
 
-  const el = (q) => document.querySelector(q);
-  const playerBoardEl = el('#playerBoard');
-  const aiBoardEl = el('#aiBoard');
-  const statusEl = el('#status');
-  const newGameBtn = el('#newGameBtn');
-  const reshuffleBtn = el('#reshuffleBtn');
-  const voiceBtn = el('#voiceBtn');
-  const themeToggle = el('#themeToggle');
+const el = (q) => document.querySelector(q);
+const playerBoardEl = el('#playerBoard');
+const aiBoardEl = el('#aiBoard');
+const statusEl = el('#status');
+const newGameBtn = el('#newGameBtn');
+const reshuffleBtn = el('#reshuffleBtn');
+const voiceBtn = el('#voiceBtn');
+const themeToggle = el('#themeToggle');
 
-  const statsEls = {
-    games: el('#sGames'),
-    wins: el('#sWins'),
-    rate: el('#sRate'),
-    avgTurns: el('#sAvgTurns'),
-  };
+const statsEls = {
+  games: el('#sGames'),
+  wins: el('#sWins'),
+  rate: el('#sRate'),
+  avgTurns: el('#sAvgTurns'),
+};
 
-  const LS_KEY = 'battleship_devin_stats';
+const LS_KEY = 'battleship_devin_stats';
 
-  let game = null;
+let game = null;
 
   function init() {
     initTheme();
@@ -539,6 +538,7 @@
           </div>
         </div>
         <div class="confetti-container" id="confetti-container"></div>
+        <div class="water-cannon-container" id="water-cannon-container"></div>
       </div>
     `;
     
@@ -595,6 +595,7 @@
         </div>
       `;
       showConfetti();
+      showWaterCannons();
     } else {
       title.textContent = '💥 Tactical Regroup';
       content.innerHTML = `
@@ -615,6 +616,7 @@
   function hideGameEndModal() {
     gameEndModal.classList.remove('show');
     clearConfetti();
+    clearWaterCannons();
     clearStormOverlay();
   }
   
@@ -641,6 +643,44 @@
   
   function clearConfetti() {
     const container = el('#confetti-container');
+    if (container) container.innerHTML = '';
+  }
+  
+  function showWaterCannons() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    
+    const container = el('#water-cannon-container');
+    
+    const positions = ['left', 'right', 'bottom-left', 'bottom-right'];
+    positions.forEach((position, index) => {
+      setTimeout(() => {
+        const cannon = document.createElement('div');
+        cannon.className = `water-cannon ${position}`;
+        container.appendChild(cannon);
+        
+        setTimeout(() => {
+          if (cannon.parentNode) {
+            cannon.parentNode.removeChild(cannon);
+          }
+        }, 2000);
+      }, index * 300);
+    });
+    
+    setTimeout(() => {
+      const splash = document.createElement('div');
+      splash.className = 'water-splash center';
+      container.appendChild(splash);
+      
+      setTimeout(() => {
+        if (splash.parentNode) {
+          splash.parentNode.removeChild(splash);
+        }
+      }, 1500);
+    }, 1200);
+  }
+  
+  function clearWaterCannons() {
+    const container = el('#water-cannon-container');
     if (container) container.innerHTML = '';
   }
 
@@ -824,6 +864,8 @@
     });
   }
 
-  // start
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
   init();
-})();
+}
