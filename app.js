@@ -280,20 +280,23 @@ let game = null;
     const cell = game.ai.grid[r][c];
     if (cell.hit || cell.miss) { status('You already tried ' + coordLabel(r,c) + '.'); return; }
     game.playerTurns++;
-    const hit = applyShot(game.ai, r, c);
-    drawBoards();
-    if (checkGameOver()) return;
-    if (hit) {
-      status(`💥 Hit at <strong>${coordLabel(r,c)}</strong> — take another shot!`);
-      playRadioChatter('hit');
-      // Allow extra shot on hit (house rule for fun)
-      return;
-    } else {
-      status(`💧 Splash at ${coordLabel(r,c)}. Enemy's turn…`);
-      playRadioChatter('miss');
-      game.turn = 'ai';
-      setTimeout(aiTurn, 500);
-    }
+    
+    animateCannonball(r, c, () => {
+      const hit = applyShot(game.ai, r, c);
+      drawBoards();
+      if (checkGameOver()) return;
+      if (hit) {
+        status(`💥 Hit at <strong>${coordLabel(r,c)}</strong> — take another shot!`);
+        playRadioChatter('hit');
+        // Allow extra shot on hit (house rule for fun)
+        return;
+      } else {
+        status(`💧 Splash at ${coordLabel(r,c)}. Enemy's turn…`);
+        playRadioChatter('miss');
+        game.turn = 'ai';
+        setTimeout(aiTurn, 500);
+      }
+    });
   }
 
   function applyShot(side, r, c) {
@@ -317,7 +320,7 @@ let game = null;
         status(`🚢 <strong>${sideLabel} ${ship.name}</strong> sunk!`);
         playRadioChatter('sunk');
         setTimeout(() => animateShipSunk(ship, side), 100);
-        setTimeout(() => animateShipSinking(ship, side), 200);
+        setTimeout(() => animateEnhancedShipSinking(ship, side), 200);
       }
       return true;
     } else {
@@ -326,8 +329,10 @@ let game = null;
       const boardEl = (side === game.player) ? playerBoardEl : aiBoardEl;
       const cellEl = boardEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
       if (cellEl) {
-        cellEl.classList.add('splash');
-        setTimeout(() => cellEl.classList.remove('splash'), 600);
+        cellEl.classList.add('splash', 'concentric-ripples');
+        setTimeout(() => {
+          cellEl.classList.remove('splash', 'concentric-ripples');
+        }, 700);
       }
       
       return false;
@@ -594,6 +599,10 @@ let game = null;
           <p><em>Imagine applying this data-driven iteration across enterprise GTM.</em></p>
         </div>
       `;
+      document.querySelectorAll('.board').forEach(board => {
+        board.classList.add('victory-flash');
+        setTimeout(() => board.classList.remove('victory-flash'), 2000);
+      });
       showConfetti();
       showWaterCannons();
     } else {
@@ -606,10 +615,14 @@ let game = null;
           <div>Time elapsed: <strong>${gameTime}s</strong></div>
         </div>
       `;
+      document.querySelectorAll('.board').forEach(board => {
+        board.classList.add('defeat-darken');
+        setTimeout(() => board.classList.remove('defeat-darken'), 3000);
+      });
       showStormOverlay();
     }
     
-    gameEndModal.classList.add('show');
+    gameEndModal.classList.add('show', 'modal-zoom');
     trapFocus();
   }
   
@@ -861,6 +874,78 @@ let game = null;
           cell.classList.remove('ship-placing');
         }, 500);
       }, index * 50);
+    });
+  }
+
+  function animateCannonball(targetR, targetC, callback) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      callback();
+      return;
+    }
+    
+    const playerBoard = playerBoardEl.getBoundingClientRect();
+    const targetCell = aiBoardEl.querySelector(`[data-r="${targetR}"][data-c="${targetC}"]`);
+    if (!targetCell) {
+      callback();
+      return;
+    }
+    const targetRect = targetCell.getBoundingClientRect();
+    
+    const cannonball = document.createElement('div');
+    cannonball.className = 'cannonball';
+    document.body.appendChild(cannonball);
+    
+    const startX = playerBoard.left + playerBoard.width / 2;
+    const startY = playerBoard.top + playerBoard.height / 2;
+    const endX = targetRect.left + targetRect.width / 2;
+    const endY = targetRect.top + targetRect.height / 2;
+    
+    cannonball.style.left = startX + 'px';
+    cannonball.style.top = startY + 'px';
+    
+    cannonball.style.setProperty('--end-x', (endX - startX) + 'px');
+    cannonball.style.setProperty('--end-y', (endY - startY) + 'px');
+    cannonball.classList.add('cannonball-arc');
+    
+    setTimeout(() => {
+      if (cannonball.parentNode) {
+        cannonball.parentNode.removeChild(cannonball);
+      }
+      callback();
+    }, 1000);
+  }
+
+  function animateEnhancedShipSinking(ship, side) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    
+    const boardEl = (side === game.player) ? playerBoardEl : aiBoardEl;
+    ship.cells.forEach(([r, c], index) => {
+      const cell = boardEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+      if (cell) {
+        setTimeout(() => {
+          cell.classList.add('enhanced-sinking');
+          
+          for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+              const bubble = document.createElement('div');
+              bubble.className = 'sinking-bubble';
+              bubble.style.left = (Math.random() * 20 - 10) + 'px';
+              bubble.style.animationDelay = (Math.random() * 0.5) + 's';
+              cell.appendChild(bubble);
+              
+              setTimeout(() => {
+                if (bubble.parentNode) {
+                  bubble.parentNode.removeChild(bubble);
+                }
+              }, 1500);
+            }, i * 200);
+          }
+          
+          setTimeout(() => {
+            cell.classList.remove('enhanced-sinking');
+          }, 1000);
+        }, index * 150);
+      }
     });
   }
 
