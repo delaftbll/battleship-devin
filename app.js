@@ -1,11 +1,11 @@
 (() => {
   const GRID = 10;
   const SHIPS = [
-    { name: "Carrier", size: 5 },
-    { name: "Battleship", size: 4 },
-    { name: "Cruiser", size: 3 },
-    { name: "Submarine", size: 3 },
-    { name: "Destroyer", size: 2 },
+    { name: "Devin", size: 5 },
+    { name: "Cognition", size: 4 },
+    { name: "AI Engineer", size: 3 },
+    { name: "Automation", size: 3 },
+    { name: "GTM Team", size: 2 },
   ];
 
   const el = (q) => document.querySelector(q);
@@ -33,7 +33,7 @@
     wireUI();
     loadStats();
     renderEmptyBoards();
-    status('Welcome! Click New Game to begin.');
+    status('Welcome David Morse — your fleet is ready, Commander.');
     createGameEndModal();
   }
 
@@ -75,9 +75,39 @@
     radioBtn.className = 'metallic-btn';
     radioBtn.addEventListener('click', toggleRadioChatter);
     
+    const easterEggBtn = document.createElement('button');
+    easterEggBtn.id = 'interviewEgg';
+    easterEggBtn.className = 'easter-egg-btn';
+    easterEggBtn.textContent = '?';
+    easterEggBtn.setAttribute('aria-label', 'Special message');
+    easterEggBtn.setAttribute('title', 'Click for a special message');
+    
+    easterEggBtn.addEventListener('click', () => {
+      const message = document.getElementById('easterEggMessage');
+      if (message) {
+        message.style.display = message.style.display === 'none' ? 'block' : 'none';
+      }
+    });
+    
     const controls = document.querySelector('.controls');
     controls.insertBefore(sonarBtn, controls.firstChild);
     controls.insertBefore(radioBtn, controls.firstChild);
+    
+    const sidebar = el('.sidebar');
+    if (sidebar) {
+      const easterEggDiv = document.createElement('div');
+      easterEggDiv.className = 'easter-egg';
+      easterEggDiv.appendChild(easterEggBtn);
+      
+      const easterEggMessage = document.createElement('div');
+      easterEggMessage.id = 'easterEggMessage';
+      easterEggMessage.className = 'easter-egg-message';
+      easterEggMessage.style.display = 'none';
+      easterEggMessage.innerHTML = '<p>Thanks for the opportunity, David — excited to discuss how I can bring this same creativity and direction to Cognition\'s GTM strategy.</p>';
+      easterEggDiv.appendChild(easterEggMessage);
+      
+      sidebar.appendChild(easterEggDiv);
+    }
   }
 
   function status(msg) { 
@@ -127,7 +157,7 @@
     placeAllShips(game.ai);
     game.started = false;
     drawBoards();
-    status('Game ready. You can <strong>Reshuffle</strong> before your first shot. When ready, target the enemy grid.');
+    status('Welcome David Morse — your fleet is ready, Commander. You can <strong>Reshuffle</strong> before your first shot.');
     reshuffleBtn.disabled = false;
   }
 
@@ -554,20 +584,21 @@
     const gameTime = game.endTime ? Math.round((game.endTime - game.startTime) / 1000) : 0;
     
     if (won) {
-      title.textContent = '🎉 Victory!';
+      title.textContent = '🎉 Mission Accomplished!';
       content.innerHTML = `
-        <p>Congratulations! You sank all enemy ships!</p>
+        <p>Mission accomplished, David. Devin helped secure the win.</p>
         <div class="game-stats">
           <div>Turns taken: <strong>${game.playerTurns}</strong></div>
           <div>Accuracy: <strong>${accuracy}%</strong></div>
           <div>Time elapsed: <strong>${gameTime}s</strong></div>
+          <p><em>Imagine applying this data-driven iteration across enterprise GTM.</em></p>
         </div>
       `;
       showConfetti();
     } else {
-      title.textContent = '💥 Defeat';
+      title.textContent = '💥 Tactical Regroup';
       content.innerHTML = `
-        <p>The enemy fleet has destroyed your ships!</p>
+        <p>Don't worry, Commander Morse — Devin will regroup and optimize our strategy.</p>
         <div class="game-stats">
           <div>Turns survived: <strong>${game.playerTurns}</strong></div>
           <div>Accuracy: <strong>${accuracy}%</strong></div>
@@ -716,12 +747,12 @@
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     
     const chatter = {
-      hit: ['Direct hit, sir!', 'Target destroyed!', 'Bull\'s eye!'],
-      miss: ['They missed us!', 'Splash, no damage!', 'Close one!'],
-      sunk: ['Enemy ship down!', 'Target eliminated!', 'Ship destroyed!'],
-      victory: ['Mission accomplished!', 'All targets destroyed!', 'Victory is ours!'],
-      defeat: ['We\'re taking heavy damage!', 'Mayday! Mayday!', 'All hands abandon ship!'],
-      sonar: data ? ['Contact confirmed!', 'Enemy ships spotted!'] : ['All clear, sir!', 'No contacts detected!'],
+      hit: ['Direct hit, sir!', 'Devin just optimized our firing strategy!', 'Bull\'s eye!'],
+      miss: ['They missed us!', 'The Cognition fleet is unstoppable!', 'Close one!'],
+      sunk: ['Enemy ship down!', 'Devin eliminated the target!', 'Ship destroyed!'],
+      victory: ['Mission accomplished!', 'The Cognition fleet is victorious!', 'Devin secured the win!'],
+      defeat: ['We\'re taking heavy damage!', 'Devin is recalculating strategy!', 'Tactical regroup needed!'],
+      sonar: data ? ['Contact confirmed!', 'Devin detected enemy ships!'] : ['All clear, sir!', 'Devin found no contacts!'],
       enabled: ['Radio online, sir!', 'Communications established!']
     };
     
