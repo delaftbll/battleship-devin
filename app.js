@@ -972,8 +972,29 @@ let game = null;
     });
   }
 
+function initSplashScreen() {
+  const splashScreen = document.getElementById('splashScreen');
+  const startGameBtn = document.getElementById('startGameBtn');
+  
+  if (!splashScreen || !startGameBtn) {
+    init();
+    return;
+  }
+  
+  startGameBtn.addEventListener('click', () => {
+    splashScreen.classList.add('fade-out');
+    
+    setTimeout(() => {
+      splashScreen.style.display = 'none';
+      init();
+    }, 800);
+  });
+  
+  startGameBtn.focus();
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', initSplashScreen);
 } else {
-  init();
+  initSplashScreen();
 }
