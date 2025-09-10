@@ -2,6 +2,8 @@
 
 A polished, browser-based Battleship game.
 
+<!-- Verification comment: This change demonstrates successful repo access and PR workflow -->
+
 ## Features
 - Classic Battleship rules (10×10 grid, 5 ships per side)
 - **AI opponent** with simple hunt/target logic (smarter than random)
